@@ -15,9 +15,9 @@
             </tr>
         </thead>
         <tbody>
-            {% for name, address, bsc, pcs, poo, owner, liquidity_pool, main_holder in final_tokens_list %}
+            {% for name, symbol, address, bsc, pcs, poo, owner, liquidity_pool, main_holder in final_tokens_list %}
             <tr>
-                <td scope="row">{{name}}</td>
+                <td scope="row">${{symbol}} - {{name}}</td>
                 <td>{{owner}}</td>
                 <td><a href="{{bsc}}#balances">{{main_holder}}</a> </td>
                 <td><a href="https://bscscan.com/token/{{liquidity_pool}}#balances" target="_blank">Pool</a></td>
