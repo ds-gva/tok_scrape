@@ -52,9 +52,12 @@ def pull_tokens():
 
     for token in fomo_tokens[0:300]:
         token_name = token.find_elements_by_xpath(".//td")[0].text
+        token_symbol = token.find_elements_by_xpath(".//td")[1].text
         token_urls = token.find_elements_by_xpath(". //td/a")
         bsc_url = token_urls[0].get_attribute("href")
         pcs_url = token_urls[1].get_attribute("href")
+        
+        print('Analysing  token $' + token_symbol + ' - ' + token_name)
 
         split_url = bsc_url.rsplit('/')
 
@@ -65,8 +68,9 @@ def pull_tokens():
             verified = contract_response.json()['status']
 
             if(verified == "1"):
+                print('Token ' + token_symbol + ' - ' + token_name + ' verified on BSC') 
                 poo_url = "https://poocoin.app/tokens/" + token_address
-                token_to_append = [token_name, token_address, bsc_url, pcs_url, poo_url]
+                token_to_append = [token_name, token_symbol, token_address, bsc_url, pcs_url, poo_url]
                 verified_tokens.append(token_to_append)
 
     num_verified_tokens = len(verified_tokens)
@@ -86,7 +90,9 @@ def filter_tokens():
     driver.maximize_window()
 
     for token in verified_tokens:
-        check_tx = "https://api.bscscan.com/api?module=account&action=txlist&address=" + token[1] + "&apikey=" + API_KEY
+        print('Verifying $' + token[1] + ' - ' + token[0] + ' transactions')
+        
+        check_tx = "https://api.bscscan.com/api?module=account&action=txlist&address=" + token[2] + "&apikey=" + API_KEY
         tx = requests.get(check_tx).json()
         num_tx = len(tx["result"])
 
@@ -95,12 +101,14 @@ def filter_tokens():
             last_tx_time = (now - float(tx["result"][-1]["timeStamp"]))/60
             
             if (last_tx_time < 10):
+                print('$' + token[1] + ' - ' + token[0] + ' has recent transactions')
                 verified_tokens_with_transactions.append(token)
 
     num_tokens_with_transactions = len(verified_tokens_with_transactions)
 
     for token in verified_tokens_with_transactions:
-        read_contract = "https://bscscan.com/readContract?a=" + token[1]
+        print('Verifying contract for $' + token[1] + ' - ' + token[0])
+        read_contract = "https://bscscan.com/readContract?a=" + token[2]
         driver.get(read_contract)
 
         if( (hasXpath("//*[contains(.,'. newun')]", driver) == False ) & (hasXpath("//*[contains(.,'. owner')]", driver) == True) & (hasXpath("//*[contains(.,'. uniswapV2Pair')]", driver) == True)):
@@ -121,7 +129,7 @@ def filter_tokens():
             token.append(liquidity_pool)
             
 
-            read_holders = "https://bscscan.com/token/generic-tokenholders2?m=normal&a=" + token[1]
+            read_holders = "https://bscscan.com/token/generic-tokenholders2?m=normal&a=" + token[2]
             driver.get(read_holders)
             holders_table = driver.find_elements_by_tag_name("tr")[1]
             main_holder_address = holders_table.find_elements_by_tag_name("td")[1].text
@@ -129,6 +137,8 @@ def filter_tokens():
             token.append(main_holder_address)
 
             final_tokens_list.append(token)
+            
+            print('$' + token[1] + ' - ' + token[0] + ' retained')
 
 
 
