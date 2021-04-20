@@ -1,4 +1,3 @@
-import pandas as pd
 import requests
 import json
 from selenium import webdriver
@@ -7,7 +6,8 @@ from mako.template import Template
 from flask import Flask
 from flask import render_template
 
-API_KEY = "XXX"  # put your bscscan api key here
+
+API_KEY = "G8H2311ZTREPZHXB5VVR77USDTJFNVI3PU"  # put your bscscan api key here
 
 # Check if the element exists in the HTML page
 def hasXpath(xpath, driver):
@@ -26,38 +26,52 @@ def jprint(obj):
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 
-verified_tokens = []
-verified_tokens_with_transactions = []
-final_tokens_list = []
 
 @app.route('/')
 def entry_page_render():
     return render_template('index.html')
 
-@app.route('/tokens')
-def pull_tokens():
+@app.route('/tokens_filter/<num>')
+def pull_tokens(num):
 
+    final_verified_tokens_list = []
+    num = int(num)
     chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument("--headless")  
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--log-level=3")
     driver = webdriver.Chrome(options=chrome_options)
     driver.set_window_size(1024, 600)
     driver.maximize_window()
 
-    
     driver.get ("https://tokenfomo.io/")
     driver.find_element_by_tag_name('tfoot').click()
     fomo_tokens = driver.find_elements_by_xpath("//*[@class='Home_mainTable__d_JUm']/tbody/tr")
     num_new_tokens = len(fomo_tokens)
 
+    if (num == 9999):
+        num = num_new_tokens - 1
 
-    for token in fomo_tokens[0:300]:
-        token_name = token.find_elements_by_xpath(".//td")[0].text
-        token_symbol = token.find_elements_by_xpath(".//td")[1].text
+    print("___________________STARTING ANALYSIS___________________")
+    print("Found ", num_new_tokens," new tokens on tokenfomo")
+    print("Running analysis on the last, ", num)
+    print("_______________________________________________________")
+
+
+ 
+    num_verified_tokens = 0
+    num_verified_tokens_with_transactions = 0
+    num_final_verified_tokens_list = 0
+
+
+    for token in fomo_tokens[0:num]:
+        token_name = token.find_element_by_xpath(".//td[@class='Home_name__3fbfx']").text
+        token_symbol = token.find_element_by_xpath(".//td[@class='Home_symbol__-cNvY']").text
         token_urls = token.find_elements_by_xpath(". //td/a")
         bsc_url = token_urls[0].get_attribute("href")
         pcs_url = token_urls[1].get_attribute("href")
+
         
-        print('Analysing  token $' + token_symbol + ' - ' + token_name)
+        print(f'\nAnalysing  token $' + token_symbol + ' - ' + token_name)
 
         split_url = bsc_url.rsplit('/')
 
@@ -66,87 +80,86 @@ def pull_tokens():
             check_contract = "https://api.bscscan.com/api?module=contract&action=getabi&address=" + token_address + "&apikey=" + API_KEY
             contract_response = requests.get(check_contract)
             verified = contract_response.json()['status']
+            
 
             if(verified == "1"):
-                print('Token ' + token_symbol + ' - ' + token_name + ' verified on BSC') 
+                print('Token ' + token_symbol + ' - ' + token_name + ' has a verified contract on BSC')
                 poo_url = "https://poocoin.app/tokens/" + token_address
+                
                 token_to_append = [token_name, token_symbol, token_address, bsc_url, pcs_url, poo_url]
-                verified_tokens.append(token_to_append)
+                num_verified_tokens += 1
 
-    num_verified_tokens = len(verified_tokens)
+                check_tx = "https://api.bscscan.com/api?module=account&action=txlist&address=" + token_address + "&apikey=" + API_KEY
+                tx = requests.get(check_tx).json()
+                num_tx = len(tx["result"])
 
+                if ( num_tx > 10):
+                    now = time.time()
+                    last_tx_time = (now - float(tx["result"][-1]["timeStamp"]))/60
+                    
+                    if (last_tx_time < 10):
+                        num_verified_tokens_with_transactions += 1
+                        print('Token ' + token_symbol + ' - ' + token_name + ' RETAINED -> has over 10 transactions, and transactions in the last 10 minutes')
+                        
+                        new_driver = webdriver.Chrome(options=chrome_options)
+                        new_driver.set_window_size(1024, 600)
+                        new_driver.maximize_window()
+                        
+                        ## Check contract and return owner, liquidity pool, etc.
+                        read_contract = "https://bscscan.com/readContract?a=" + token_address
+                        new_driver.get(read_contract)
+
+                        if( (hasXpath("//*[contains(.,'. newun')]", new_driver) == False ) & (hasXpath("//*[contains(.,'. owner')]", new_driver) == True) & (hasXpath("//*[contains(.,'. uniswapV2Pair')]", new_driver) == True)): 
+                            
+                            cards = new_driver.find_elements_by_class_name('card')
+                            owner_address = ''
+                            liquidity_pool = ''
+                            for card in cards:
+                                card_text = card.text
+
+                                if(". owner" in card_text):
+                                    owner_address = card_text.rsplit(' ')[1][6:]
+                                    
+                                if(". uniswapV2Pair" in card_text):
+                                    liquidity_pool = card_text.rsplit(' ')[1][14:]
+
+                            token_to_append.append(owner_address)
+                            token_to_append.append(liquidity_pool)
+                            
+                            read_holders = "https://bscscan.com/token/generic-tokenholders2?m=normal&a=" + token_address
+                            new_driver.get(read_holders)
+
+                            holders_table = new_driver.find_elements_by_tag_name("tr")[1]
+                            main_holder_address = holders_table.find_elements_by_tag_name("td")[1].text
+                            token_to_append.append(main_holder_address)
+
+                            new_driver.quit()
+                            num_final_verified_tokens_list += 1
+                            final_verified_tokens_list.append(token_to_append)
+
+                            print('Token ' + token_symbol + ' - ' + token_name + ' RETAINED -> has an owner, a liquidity pool, and no newun')
+                        else:
+                            print('Token ' + token_symbol + ' - ' + token_name + ' DISCARDED -> either no liquidity pool, no owner or newun scam')
+                    else:
+                        print('Token ' + token_symbol + ' - ' + token_name + ' DISCARDED -> no transaction in last 10 minutes')
+                else:
+                    print('Token ' + token_symbol + ' - ' + token_name + ' DISCARDED -> less than 10 transactions')                       
+
+            else:
+                print('Token ' + token_symbol + ' - ' + token_name + ' DISCARDED -> no verified contract on the BSC')
+            
+
+    print("___________________ANALYSIS COMPLETE___________________")
+    print("Total Tokens Analyzed: ", num)
     print("Found ", num_verified_tokens," verified tokens")
+    print("Of which, ", num_verified_tokens_with_transactions," with >10 Tx and at least 1 Tx in last 10min")
+    print("And, ", num_final_verified_tokens_list, "Responding to contract criteria")
+    print("_______________________________________________________")
 
     driver.quit()
+    
 
-    return render_template('tokens.html', num_verified_tokens=num_verified_tokens)
-
-@app.route('/filter')
-def filter_tokens():
-    chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument("--headless")  
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.set_window_size(1024, 600)
-    driver.maximize_window()
-
-    for token in verified_tokens:
-        print('Verifying $' + token[1] + ' - ' + token[0] + ' transactions')
-        
-        check_tx = "https://api.bscscan.com/api?module=account&action=txlist&address=" + token[2] + "&apikey=" + API_KEY
-        tx = requests.get(check_tx).json()
-        num_tx = len(tx["result"])
-
-        if(num_tx > 10):
-            now = time.time()
-            last_tx_time = (now - float(tx["result"][-1]["timeStamp"]))/60
-            
-            if (last_tx_time < 10):
-                print('$' + token[1] + ' - ' + token[0] + ' has recent transactions')
-                verified_tokens_with_transactions.append(token)
-
-    num_tokens_with_transactions = len(verified_tokens_with_transactions)
-
-    for token in verified_tokens_with_transactions:
-        print('Verifying contract for $' + token[1] + ' - ' + token[0])
-        read_contract = "https://bscscan.com/readContract?a=" + token[2]
-        driver.get(read_contract)
-
-        if( (hasXpath("//*[contains(.,'. newun')]", driver) == False ) & (hasXpath("//*[contains(.,'. owner')]", driver) == True) & (hasXpath("//*[contains(.,'. uniswapV2Pair')]", driver) == True)):
-            cards = driver.find_elements_by_class_name('card')
-            
-            owner_address = ''
-            liquidity_pool = ''
-            for card in cards:
-                card_text = card.text
-
-                if(". owner" in card_text):
-                    owner_address = card_text.rsplit(' ')[1][6:]
-                    
-                if(". uniswapV2Pair" in card_text):
-                    liquidity_pool = card_text.rsplit(' ')[1][14:]
-
-            token.append(owner_address)
-            token.append(liquidity_pool)
-            
-
-            read_holders = "https://bscscan.com/token/generic-tokenholders2?m=normal&a=" + token[2]
-            driver.get(read_holders)
-            holders_table = driver.find_elements_by_tag_name("tr")[1]
-            main_holder_address = holders_table.find_elements_by_tag_name("td")[1].text
-
-            token.append(main_holder_address)
-
-            final_tokens_list.append(token)
-            
-            print('$' + token[1] + ' - ' + token[0] + ' retained')
-
-
-
-        else:
-            print("Either no owner or newun function present -> token discarded")
-
-
-    return render_template('filter.html', num_tokens_with_transactions=num_tokens_with_transactions, final_tokens_list=final_tokens_list)
+    return render_template('tokens_filter.html', final_tokens_list=final_verified_tokens_list, num_new_tokens=num_new_tokens, num=num, num_verified_tokens=num_verified_tokens, num_verified_tokens_with_transactions=num_verified_tokens_with_transactions, num_final_verified_tokens_list=num_final_verified_tokens_list)
 
 if __name__ == '__main__':
     app.run()

@@ -1,7 +1,10 @@
 {% include "header.html" %}
 <div class="container">
-    <h1>Welcome to the BSC Shitcoin TokenScraper</h1>
+    <h1>Welcome to the HFR Shitcoin TokenScraper (for BSC)</h1>
     <p>What would you like to do?</p>
-    <p><a href="/tokens">Pull Verified Tokens</a></p>
+    <p class="text-muted"><a href="/tokens_filter/50">Check Last 50 Tokens on the BSC</a> (test mode only)</p>
+    <p><a href="/tokens_filter/200">Check Last 200 Tokens on the BSC</a></p>
+    <p><a href="/tokens_filter/500">Check Last 500 Tokens on the BSC</a></p>
+    <p><a href="/tokens_filter/9999">Check All the tokens from last 24h on the BSC</a><span class="text-danger font-weight-bold"> (Warning! Might take a long time!)</span></p>
 </div>
 {% include "footer.html" %}
