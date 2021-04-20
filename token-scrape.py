@@ -7,7 +7,7 @@ from flask import Flask
 from flask import render_template
 
 
-API_KEY = "G8H2311ZTREPZHXB5VVR77USDTJFNVI3PU"  # put your bscscan api key here
+API_KEY = "XXX"  # put your bscscan api key here
 
 # Check if the element exists in the HTML page
 def hasXpath(xpath, driver):
