@@ -1,0 +1,45 @@
+{% include "header.html" %}
+<div class="container">
+    <h2>HFR ShitCoin Analysis Completed!</h2>
+    <p>
+        <h3>Key statistics:</h3>
+        <ul>
+            <li>Tokens over last 24h on Tokenfomo: {{num_new_tokens}}</li>
+            <li>Tokens analyzed: {{num}}</li>
+            <li>Tokens with Verified Contracts: {{num_verified_tokens}}</li>
+            <li>Tokens meeting Transactions Criteria: {{num_verified_tokens_with_transactions}}</li>
+            <li>Tokens meeting ownership criteria: {{num_final_verified_tokens_list}}</li>
+        </ul>
+        
+    </p>
+
+    <p><a href="/">Run the Analysis again</a></p>
+
+    <table class="table table-striped">
+        <thead class="thead-dark">
+            <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Owner</th>
+                <th scope="col">Top Holder</th>
+                <th scope="col">LP</th>
+                <th scope="col">PooCoin</th>
+                <th scope="col">BSCScan</th>
+                <th scope="col">PancakeSwap</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for name, symbol, address, bsc, pcs, poo, owner, liquidity_pool, main_holder in final_tokens_list %}
+            <tr>
+                <td scope="row">${{symbol}} - {{name}}</td>
+                <td>{{owner}}</td>
+                <td><a href="{{bsc}}#balances">{{main_holder}}</a> </td>
+                <td><a href="https://bscscan.com/token/{{liquidity_pool}}#balances" target="_blank">Pool</a></td>
+                <td><a href="{{poo}}" target="_blank">Chart</a></td>
+                <td><a href="{{bsc}}" target="_blank">BSC</a></td>
+                <td><a href="{{pcs}}" target="_blank">Pancake</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% include "footer.html" %}
