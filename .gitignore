@@ -1,2 +1,2 @@
-chromedriver.exe
-venv/
+__pycache__/
+.env
