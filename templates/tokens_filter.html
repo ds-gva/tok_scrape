@@ -4,13 +4,10 @@
     <p>
         <h3>Key statistics:</h3>
         <ul>
-            <li>Tokens over last 24h on Tokenfomo: {{num_new_tokens}}</li>
-            <li>Tokens analyzed: {{num}}</li>
-            <li>Tokens with Verified Contracts: {{num_verified_tokens}}</li>
-            <li>Tokens meeting Transactions Criteria: {{num_verified_tokens_with_transactions}}</li>
-            <li>Tokens meeting ownership criteria: {{num_final_verified_tokens_list}}</li>
+            <li>Timeframe: last {{timeframe}} minutes</li>
+            <li>Tokens Analyzed: {{total_analysed}}</li>
+            <li>Tokens Retained: {{num_retained}}</li>
         </ul>
-        
     </p>
 
     <p><a href="/">Run the Analysis again</a></p>
@@ -20,23 +17,19 @@
             <tr>
                 <th scope="col">Name</th>
                 <th scope="col">Owner</th>
-                <th scope="col">Top Holder</th>
+                <th scope="col">Poocoin</th>
+                <th scope="col">Holders</th>
                 <th scope="col">LP</th>
-                <th scope="col">PooCoin</th>
-                <th scope="col">BSCScan</th>
-                <th scope="col">PancakeSwap</th>
             </tr>
         </thead>
         <tbody>
-            {% for name, symbol, address, bsc, pcs, poo, owner, liquidity_pool, main_holder in final_tokens_list %}
+            {% for token in final_tokens_list %}
             <tr>
-                <td scope="row">${{symbol}} - {{name}}</td>
-                <td>{{owner}}</td>
-                <td><a href="{{bsc}}#balances">{{main_holder}}</a> </td>
-                <td><a href="https://bscscan.com/token/{{liquidity_pool}}#balances" target="_blank">Pool</a></td>
-                <td><a href="{{poo}}" target="_blank">Chart</a></td>
-                <td><a href="{{bsc}}" target="_blank">BSC</a></td>
-                <td><a href="{{pcs}}" target="_blank">Pancake</a></td>
+                <td scope="row">${{token.symbol}} - {{token.name}}</td>
+                <td scope="row"><a href="https://bscscan.com/address/{{token.owner}}" target="_blank">${{token.owner_type}}</a></td>
+                <td scope="row"><a href="{{token.poocoin}}" target="_blank">Chart</a></td>
+                <td scope="row"><a href="{{token.top_holders}}" target="_blank">Holders</a></td>
+                <td scope="row"><a href="{{token.lp}}" target="_blank">LP Holders</a></td>
             </tr>
             {% endfor %}
         </tbody>

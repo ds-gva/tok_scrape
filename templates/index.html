@@ -2,9 +2,19 @@
 <div class="container">
     <h1>Welcome to the HFR Shitcoin TokenScraper (for BSC)</h1>
     <p>What would you like to do?</p>
-    <p class="text-muted"><a href="/tokens_filter/50">Check Last 50 Tokens on the BSC</a> (test mode only)</p>
-    <p><a href="/tokens_filter/200">Check Last 200 Tokens on the BSC</a></p>
-    <p><a href="/tokens_filter/500">Check Last 500 Tokens on the BSC</a></p>
-    <p><a href="/tokens_filter/9999">Check All the tokens from last 24h on the BSC</a><span class="text-danger font-weight-bold"> (Warning! Might take a long time!)</span></p>
+    <p class="text-muted"><a href="/tokens_filter/10">Check Tokens from last 10 minutes</a> (test mode only)</p>
+    <p><a href="/tokens_filter/60">Check tokens from last hour</a></p>
+    <p><a href="/tokens_filter/249">Check tokens from last 4 hours</a></p>
+    <h2>How does the scraper work?</h2>
+    <div>
+    <p>>Pulls all the newly created token pairs on pancakeswap over te defined time period, then excludes tokens...</p>
+        <ul>
+            <li>...that do not have a verified contract on BSCScan</li>
+            <li>...which have any of these three functions in their code: mint(), pause(), transfernewun() ; (all known as scammy, but can have legitimate use)</li>
+            <li>...owned by their developer or with unknown owner (i.e., only retain dead addresses/renounced ownership and contracts as owners)</li>
+            <li>...with less than 10 transactions in the last 10 minutes</li>
+        </ul>
+    <p>The scraper does not guarantee the robustness of the remaining contracts nor their performance -> DYOR and analyze carefully before investing!</p>
+    </div>
 </div>
 {% include "footer.html" %}
