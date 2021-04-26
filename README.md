@@ -16,4 +16,5 @@ NOTE: pendant la transition vers PCS v2, les liens vers la LP peuvent être cass
 
 * Python 3.7.6+
 * Dépendances dans le fichier requirements.txt
+* Créer un fichier avec comme nom `.env` et à l'intérieur insérer une ligne: `API_KEY=XXX` (en remplacant le XXX avec votre clé BSCSCan)  - pour obtenir une clé il faut créer un compte (gratuit) sur BSCScan
 * Lancer avec `python hfr_token_scrape_v2.py` et ensuite naviguer sur `127.0.0.1:5000` pour accéder au scraper
