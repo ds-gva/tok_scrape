@@ -9,9 +9,12 @@ from dotenv import load_dotenv
 import requests
 import constants
 import os
+from datetime import datetime
+import time
 
 load_dotenv() # get .env
 API_KEY = os.getenv('API_KEY') # load API_KEY
+print(API_KEY)
 
 def return_latest_block():
     return {"jsonrpc":"2.0",
@@ -19,15 +22,16 @@ def return_latest_block():
             "params":[],
             "id":83 }
 
-def format_logs_request(from_block):
+def format_logs_request(from_block, to_block):
     from_block =str(from_block)
+    to_block = str(to_block)
     return {"jsonrpc":"2.0",
                 "id":1,
                 "method":"eth_getLogs",
                 "params": [{"fromBlock": from_block,
-                            "toBlock":"latest",
+                            "toBlock": to_block,
                             "topics": constants.TOPICS,
-                            "address": constants.PCS_FACTORY_ADDRESS}]}
+                            "address": constants.PCS_V1_FACTORY_ADDRESS}]}
 
 # Get starting block by going back in time
 def find_starting_block(since_minutes):
@@ -37,19 +41,50 @@ def find_starting_block(since_minutes):
 
 # Pull tokens from the blockchain over the last x minutes
 def get_latest_tokens(minutes_to_scrape):
-    starting_block = find_starting_block(minutes_to_scrape)
-    get_logs_request = format_logs_request(starting_block)
+    requests_list = []
+    if (minutes_to_scrape > 249):
 
-    request = requests.post(constants.BLOCKCHAIN_URL, json=get_logs_request)
+        starting_block = find_starting_block(1440) # if we are over 4h lets just assume we go for a full 24h
+        current_last_block = int(starting_block,16) + 4999
+        get_logs_request = format_logs_request(starting_block, Web3.toHex(current_last_block))
+
+        request = requests.post(constants.BLOCKCHAIN_URL, json=get_logs_request)
+        requests_list.append(request)
+
+        num_iter = int((1440*(60/constants.SECONDS_PER_BLOCK))/5000) - 1
+        i = 0
+        while i < num_iter:
+            print(i)
+            starting_block = current_last_block + 1
+            current_last_block = starting_block + 4999
+            get_logs_request = format_logs_request(Web3.toHex(starting_block), Web3.toHex(current_last_block))
+            request = requests.post(constants.BLOCKCHAIN_URL, json=get_logs_request)
+            requests_list.append(request)
+            i += 1
+
+        starting_block = current_last_block + 1
+        get_logs_request = format_logs_request(Web3.toHex(starting_block), 'latest')
+        request = requests.post(constants.BLOCKCHAIN_URL, json=get_logs_request)
+        requests_list.append(request)
+
+    else:
+        starting_block = find_starting_block(minutes_to_scrape)
+        get_logs_request = format_logs_request(starting_block, 'latest')
+        request = requests.post(constants.BLOCKCHAIN_URL, json=get_logs_request)
+        requests_list.append(request)
+        
     new_tokens_list = []
     token_count = 0
-    block_logs = request.json()        
-    for a_log in block_logs['result']:
-        for a_topic in a_log['topics']:
-            if ((a_topic != constants.TOPICS) & (a_topic != constants.WBNB_ADDRESS_LONG) & (a_topic[:8] == '0x000000')):
-                token_address = '0x'+ a_topic[26:]
-                token_count += 1
-                new_tokens_list.append(token_address)
+    for req in requests_list:
+        block_logs = req.json() 
+        #print(block_logs)
+        for a_log in block_logs['result']:
+            for a_topic in a_log['topics']:
+                if ((a_topic != constants.TOPICS) & (a_topic != constants.WBNB_ADDRESS_LONG) & (a_topic[:8] == '0x000000')):
+                    token_address = '0x'+ a_topic[26:]
+                    token_block = a_log['blockNumber']
+                    token_count += 1
+                    new_tokens_list.append([token_address, token_block])
     print("Identified", token_count, "new tokens in the last ", minutes_to_scrape, "minutes")
     return new_tokens_list
 
@@ -91,7 +126,7 @@ def parse_fn_single_output(fn_output):
 # Check whether the owner address is a contract, a wallet, or a dead address (or blank)
 def check_owner_type(address, w3):
     try:
-        code = w3.eth.get_code(address)
+        code = w3.eth.getCode(address)
         if (Web3.toHex(code) == '0x'):
             if (address[-4:] == 'dEaD' or address[-10:] == '0000000000'):
                 return 'dead'
@@ -115,7 +150,6 @@ def new():
 
 @app.route('/tokens_filter/<num>')
 def pull_tokens(num):
-    print("START")
     w3 = Web3(HTTPProvider(constants.BLOCKCHAIN_URL))
     w3.middleware_onion.inject(geth_poa_middleware, layer=0)
     w3.clientVersion
@@ -131,8 +165,9 @@ def pull_tokens(num):
 
     retained_tokens = []
 
-    for token in latest_bsc_tokens_list:
-        token_address = w3.toChecksumAddress(token)
+    for token in latest_bsc_tokens_list[::-1]:
+        token_address = w3.toChecksumAddress(token[0])
+        token_block = token[1]
         token_code = w3.eth.getCode(token_address)
 
         mint = check_fn_exists(token_code, mint_fn_signature)
@@ -160,24 +195,35 @@ def pull_tokens(num):
                 transfer_minutes = 10 # Check for transfers in last 10 minutes
                 transfer_start_block = find_starting_block(transfer_minutes)
                 transfers = contract.events.Transfer.getLogs(fromBlock=transfer_start_block, toBlock='latest')
-
-                if(len(transfers) > 10):
-                    pcs_factory_contract = w3.eth.contract(address=w3.toChecksumAddress(constants.PCS_FACTORY_ADDRESS), abi=constants.DUMMY_PCS_ABI)
-                    wbnb_address_short = w3.toChecksumAddress("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c")
-                    liquidity_pair_address = pcs_factory_contract.functions.getPair(token_address, wbnb_address_short).call()
-                    approved_token = {
-                        "name": contract.functions.name().call(),
-                        "symbol": contract.functions.symbol().call(),
-                        "address": token_address,
-                        "bscscan": "https://bscscan.com/token/" + token_address,
-                        "poocoin": "https://poocoin.app/tokens/" + token_address,
-                        "top_holders": "https://bscscan.com/token/" + token_address + "#balances",
-                        "lp": "https://bscscan.com/token/" + liquidity_pair_address + "#balances",
-                        "owner": token_owner,
-                        "owner_type": owner_type
-                    }
-                    retained_tokens.append(approved_token)
-                    print(token_address, " - Token RETAINED")
+                token_transfers = len(transfers)
+                if(token_transfers < 10):
+                    transfer_color = 'table-danger'
+                else:
+                    transfer_color = ''
+                pcs_v1_factory_contract = w3.eth.contract(address=w3.toChecksumAddress(constants.PCS_V1_FACTORY_ADDRESS), abi=constants.DUMMY_PCS_ABI)
+                pcs_v2_factory_contract = w3.eth.contract(address=w3.toChecksumAddress(constants.PCS_V2_FACTORY_ADDRESS), abi=constants.DUMMY_PCS_ABI)
+                wbnb_address_short = w3.toChecksumAddress("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c")
+                liquidity_v1_pair_address = pcs_v1_factory_contract.functions.getPair(token_address, wbnb_address_short).call()
+                liquidity_v2_pair_address = pcs_v2_factory_contract.functions.getPair(token_address, wbnb_address_short).call()
+                pair_creation_time = w3.eth.get_block(token_block).timestamp
+                time_since_creation = int((time.time() - pair_creation_time)/60)
+                approved_token = {
+                    "name": contract.functions.name().call(),
+                    "symbol": contract.functions.symbol().call(),
+                    "address": token_address,
+                    "bscscan": "https://bscscan.com/token/" + token_address,
+                    "poocoin": "https://poocoin.app/tokens/" + token_address,
+                    "top_holders": "https://bscscan.com/token/" + token_address + "#balances",
+                    "lp_v1": "https://bscscan.com/token/" + liquidity_v1_pair_address + "#balances",
+                    "lp_v2": "https://bscscan.com/token/" + liquidity_v2_pair_address + "#balances",
+                    "owner": token_owner,
+                    "owner_type": owner_type,
+                    "creation_time": time_since_creation,
+                    "num_transfers": token_transfers,
+                    "transfer_color": transfer_color
+                }
+                retained_tokens.append(approved_token)
+                print(token_address, " - Token RETAINED")
             else:
                 print(token_address, "- Token DISCARDED -> Source Code is NOT VERIFIED on BSC")
 

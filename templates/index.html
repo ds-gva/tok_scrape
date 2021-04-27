@@ -5,15 +5,26 @@
     <p class="text-muted"><a href="/tokens_filter/10">Check Tokens from last 10 minutes</a> (test mode only)</p>
     <p><a href="/tokens_filter/60">Check tokens from last hour</a></p>
     <p><a href="/tokens_filter/249">Check tokens from last 4 hours</a></p>
+    <p class="text-muted"><a href="/tokens_filter/250">Check tokens from last 24 hours</a> (can take up to 5 minutes)</p>
     <h2>How does the scraper work?</h2>
     <div>
-    <p>Pulls all the newly created token pairs on pancakeswap over te defined time period, then excludes tokens...</p>
+    <p>Pulls all the newly created token pairs on pancakeswap over te defined time period, then excludes tokens...
         <ul>
             <li>...that do not have a verified contract on BSCScan</li>
             <li>...which have any of these three functions in their code: mint(), pause(), transfernewun() ; (all known as scammy, but can have legitimate use)</li>
             <li>...owned by their developer or with unknown owner (i.e., only retain dead addresses/renounced ownership and contracts as owners)</li>
-            <li>...with less than 10 transactions in the last 10 minutes</li>
         </ul>
+    </p>
+    <p>The scraper also provides helpful additional information and links to continue DYOR:
+        <ul>
+            <li>Owner type (contract or dead) and address, if contract</li>
+            <li>Top Holders (through BSCScan)</li>
+            <li>PooCoin to check charts</li>
+            <li>Pancakeswap LP v1 and v2 addresses (to check top holders</li>
+            <li>Time since token creation</li>
+            <li>Number of transactions in last 10min (in red, tokens with less than 10)</li>
+        </ul>
+    </p>
     <p>The scraper does not guarantee the robustness of the remaining contracts nor their performance -> DYOR and analyze carefully before investing!</p>
     </div>
 </div>
