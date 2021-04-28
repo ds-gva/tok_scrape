@@ -229,10 +229,8 @@ def pull_tokens(num):
                     transfer_color = 'table-danger'
                 else:
                     transfer_color = ''
-                pcs_v1_factory_contract = w3.eth.contract(address=w3.toChecksumAddress(constants.PCS_V1_FACTORY_ADDRESS), abi=constants.PCS_ABI)
                 pcs_v2_factory_contract = w3.eth.contract(address=w3.toChecksumAddress(constants.PCS_V2_FACTORY_ADDRESS), abi=constants.PCS_ABI)
                 wbnb_address_short = w3.toChecksumAddress("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c")
-                liquidity_v1_pair_address = pcs_v1_factory_contract.functions.getPair(token_address, wbnb_address_short).call()
                 liquidity_v2_pair_address = pcs_v2_factory_contract.functions.getPair(token_address, wbnb_address_short).call()
                 pair_creation_time = w3.eth.get_block(token_block).timestamp
                 time_since_creation = int((time.time() - pair_creation_time)/60)
@@ -243,7 +241,6 @@ def pull_tokens(num):
                     "bscscan": "https://bscscan.com/token/" + token_address,
                     "poocoin": "https://poocoin.app/tokens/" + token_address,
                     "top_holders": "https://bscscan.com/token/" + token_address + "#balances",
-                    "lp_v1": "https://bscscan.com/token/" + liquidity_v1_pair_address + "#balances",
                     "lp_v2": "https://bscscan.com/token/" + liquidity_v2_pair_address + "#balances",
                     "owner": token_owner,
                     "owner_type": owner_type,
