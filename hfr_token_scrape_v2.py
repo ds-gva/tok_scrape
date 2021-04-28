@@ -35,7 +35,7 @@ def format_logs_request(from_block, to_block):
                 "params": [{"fromBlock": from_block,
                             "toBlock": to_block,
                             "topics": constants.TOPICS,
-                            "address": constants.PCS_V1_FACTORY_ADDRESS}]}
+                            "address": constants.PCS_V2_FACTORY_ADDRESS}]}
 
 # Get starting block by going back in time
 def find_starting_block(since_minutes):
@@ -229,8 +229,8 @@ def pull_tokens(num):
                     transfer_color = 'table-danger'
                 else:
                     transfer_color = ''
-                pcs_v1_factory_contract = w3.eth.contract(address=w3.toChecksumAddress(constants.PCS_V1_FACTORY_ADDRESS), abi=constants.DUMMY_PCS_ABI)
-                pcs_v2_factory_contract = w3.eth.contract(address=w3.toChecksumAddress(constants.PCS_V2_FACTORY_ADDRESS), abi=constants.DUMMY_PCS_ABI)
+                pcs_v1_factory_contract = w3.eth.contract(address=w3.toChecksumAddress(constants.PCS_V1_FACTORY_ADDRESS), abi=constants.PCS_ABI)
+                pcs_v2_factory_contract = w3.eth.contract(address=w3.toChecksumAddress(constants.PCS_V2_FACTORY_ADDRESS), abi=constants.PCS_ABI)
                 wbnb_address_short = w3.toChecksumAddress("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c")
                 liquidity_v1_pair_address = pcs_v1_factory_contract.functions.getPair(token_address, wbnb_address_short).call()
                 liquidity_v2_pair_address = pcs_v2_factory_contract.functions.getPair(token_address, wbnb_address_short).call()
@@ -264,6 +264,5 @@ def pull_tokens(num):
     auto_reload = True if (int(num) < 250) else auto_reload == False
 
     return render_template('tokens_filter.html', auto_reload=auto_reload, final_tokens_list=retained_tokens, num_retained=num_tokens_retained, total_analysed=num_total_tokens, timeframe=last_minutes_to_scrape)
-
 if __name__ == '__main__':
     app.run()
