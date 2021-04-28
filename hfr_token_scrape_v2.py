@@ -14,7 +14,11 @@ import time
 
 load_dotenv() # get .env
 API_KEY = os.getenv('API_KEY') # load API_KEY
-print(API_KEY)
+
+w3 = Web3(HTTPProvider(constants.BLOCKCHAIN_URL))
+w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+w3.clientVersion
+w3.isConnected()
 
 def return_latest_block():
     return {"jsonrpc":"2.0",
@@ -48,37 +52,67 @@ def get_latest_tokens(minutes_to_scrape):
         current_last_block = int(starting_block,16) + 4999
         get_logs_request = format_logs_request(starting_block, Web3.toHex(current_last_block))
 
-        request = requests.post(constants.BLOCKCHAIN_URL, json=get_logs_request)
-        requests_list.append(request)
+        success = False
+        while success == False:
+            request = requests.post(constants.BLOCKCHAIN_URL, json=get_logs_request).json()
+            if 'result' in request:
+                success = True
+                requests_list.append(request)
+            else:
+                success = False
 
         num_iter = int((1440*(60/constants.SECONDS_PER_BLOCK))/5000) - 1
         i = 0
         while i < num_iter:
-            print(i)
             starting_block = current_last_block + 1
             current_last_block = starting_block + 4999
             get_logs_request = format_logs_request(Web3.toHex(starting_block), Web3.toHex(current_last_block))
-            request = requests.post(constants.BLOCKCHAIN_URL, json=get_logs_request)
-            requests_list.append(request)
-            i += 1
+
+            success = False
+            while success == False:
+                request = requests.post(constants.BLOCKCHAIN_URL, json=get_logs_request).json()
+                if 'result' in request:
+                    success = True
+                    requests_list.append(request)
+                    i += 1
+                else:
+                    success = False 
 
         starting_block = current_last_block + 1
         get_logs_request = format_logs_request(Web3.toHex(starting_block), 'latest')
-        request = requests.post(constants.BLOCKCHAIN_URL, json=get_logs_request)
-        requests_list.append(request)
+
+        success = False
+        while success == False:
+            request = requests.post(constants.BLOCKCHAIN_URL, json=get_logs_request).json()
+            if 'result' in request:
+                success = True
+                requests_list.append(request)
+            else:
+                success = False
 
     else:
         starting_block = find_starting_block(minutes_to_scrape)
         get_logs_request = format_logs_request(starting_block, 'latest')
-        request = requests.post(constants.BLOCKCHAIN_URL, json=get_logs_request)
-        requests_list.append(request)
+
+        success = False
+        while success == False:
+            request = requests.post(constants.BLOCKCHAIN_URL, json=get_logs_request).json()
+            if 'result' in request:
+                success = True
+                requests_list.append(request)
+            else:
+                success = False
         
     new_tokens_list = []
     token_count = 0
-    for req in requests_list:
-        block_logs = req.json() 
+    for block_logs in requests_list:
+        try:
+            results = block_logs['result']
+        except KeyError:
+            print(block_logs)
+            print(type(block_logs))
         #print(block_logs)
-        for a_log in block_logs['result']:
+        for a_log in results:
             for a_topic in a_log['topics']:
                 if ((a_topic != constants.TOPICS) & (a_topic != constants.WBNB_ADDRESS_LONG) & (a_topic[:8] == '0x000000')):
                     token_address = '0x'+ a_topic[26:]
@@ -150,11 +184,6 @@ def new():
 
 @app.route('/tokens_filter/<num>')
 def pull_tokens(num):
-    w3 = Web3(HTTPProvider(constants.BLOCKCHAIN_URL))
-    w3.middleware_onion.inject(geth_poa_middleware, layer=0)
-    w3.clientVersion
-    w3.isConnected()
-
     last_minutes_to_scrape = int(num) # Max 249 for the time being (5000 blocks) - we can increase later
 
     latest_bsc_tokens_list = get_latest_tokens(last_minutes_to_scrape)
@@ -231,7 +260,10 @@ def pull_tokens(num):
     num_tokens_retained = len(retained_tokens)
     print("Finished Analysis, retained", num_tokens_retained, "tokens")
 
-    return render_template('tokens_filter.html', final_tokens_list=retained_tokens, num_retained=num_tokens_retained, total_analysed=num_total_tokens, timeframe=last_minutes_to_scrape)
+    auto_reload = False
+    auto_reload = True if (int(num) < 250) else auto_reload == False
+
+    return render_template('tokens_filter.html', auto_reload=auto_reload, final_tokens_list=retained_tokens, num_retained=num_tokens_retained, total_analysed=num_total_tokens, timeframe=last_minutes_to_scrape)
 
 if __name__ == '__main__':
     app.run()

@@ -1,11 +1,13 @@
 {% include "header.html" %}
+</head>
+<body>
 <div class="container">
     <h1>Welcome to the HFR Shitcoin TokenScraper (for BSC)</h1>
     <p>What would you like to do?</p>
-    <p class="text-muted"><a href="/tokens_filter/10">Check Tokens from last 10 minutes</a> (test mode only)</p>
-    <p><a href="/tokens_filter/60">Check tokens from last hour</a></p>
-    <p><a href="/tokens_filter/249">Check tokens from last 4 hours</a></p>
-    <p class="text-muted"><a href="/tokens_filter/250">Check tokens from last 24 hours</a> (can take up to 5 minutes)</p>
+    <p class="text-muted"><a href="/tokens_filter/10">Check Tokens from last 10 minutes</a> (test mode only - with auto-refresh every 1min)</p>
+    <p class="text-muted"><a href="/tokens_filter/60">Check tokens from last hour</a> (with auto-refresh every 1min)</p>
+    <p class="text-muted"><a href="/tokens_filter/249">Check tokens from last 4 hours</a> (with auto-refresh every 1min)</p>
+    <p class="text-muted"><a href="/tokens_filter/250">Check tokens from last 24 hours</a> (can take up to 5 minutes - no auto-refresh)</p>
     <h2>How does the scraper work?</h2>
     <div>
     <p>Pulls all the newly created token pairs on pancakeswap over te defined time period, then excludes tokens...
