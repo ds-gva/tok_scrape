@@ -34,7 +34,7 @@
         <tbody>
             {% for token in final_tokens_list %}
             <tr class="{{token.transfer_color}}">
-                <td scope="row">${{token.symbol}} - {{token.name}}</td>
+                <td scope="row">${{token.symbol}} - {{token.name}} <button onClick="copyToken('{{token.symbol}}', '{{token.name}}', '{{token.address}}')">Copy</button></td>
                 <td scope="row"><a href="https://bscscan.com/address/{{token.owner}}" target="_blank">${{token.owner_type}}</a></td>
                 <td scope="row"><a href="{{token.poocoin}}" target="_blank">Chart</a></td>
                 <td scope="row"><a href="{{token.top_holders}}" target="_blank">Holders</a></td>
@@ -46,4 +46,14 @@
         </tbody>
     </table>
 </div>
+<script>
+    function copyToken(symbol, name, address) {
+        const tokenDesc = document.createElement('textarea');
+        tokenDesc.value = "$" + symbol + " - " + name + " -> " + address;
+        document.body.appendChild(tokenDesc);
+        tokenDesc.select();
+        document.execCommand('copy');
+        document.body.removeChild(tokenDesc);
+    }
+</script>
 {% include "footer.html" %}
