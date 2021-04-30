@@ -18,7 +18,15 @@
     <p><a href="/">Run the Analysis again</a></p>
 
     <p class="text-danger">Note: in red are coins with a low transaction count (<10 in last 10 minutes)</p>
-
+    <p>Click on <i class="bi bi-box-arrow-in-right"></i> to copy the token's details </p>
+    <p>For further analysis consider:
+        <ul>
+            <li>Check top holders (avoid coins with high top holder %) ; careful with burnt coins which can obfuscate the %</li>
+            <li>Check whether LP is locked or burnt</li>
+            <li>Consider copy-pasting contract source on <a href="https://rugscreen.com/Scan/Index" target="_blank">Rugscreen</a></li>
+        </ul>
+    </p>
+    
     <table class="table table-striped">
         <thead class="thead-dark">
             <tr>
@@ -27,6 +35,7 @@
                 <th scope="col">Poocoin</th>
                 <th scope="col">Holders</th>
                 <th scope="col">LP v2</th>
+                <th scope="col">Source</th>
                 <th scope="col">Time</th>
                 <th scope="col"># Tx (last 10m)</th>
             </tr>
@@ -34,11 +43,17 @@
         <tbody>
             {% for token in final_tokens_list %}
             <tr class="{{token.transfer_color}}">
-                <td scope="row">${{token.symbol}} - {{token.name}} <button type="button" class="btn btn-secondary btn-sm" onClick="copyToken('{{token.symbol}}', '{{token.name}}', '{{token.address}}')">copy</button></td>
+                <td scope="row">
+                    <button type="button" class="btn btn-default" aria-label="Left Align" onClick="copyToken('{{token.symbol}}', '{{token.name}}', '{{token.address}}')">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                    </button>
+                    ${{token.symbol}} - {{token.name}}
+                </td>
                 <td scope="row"><a href="https://bscscan.com/address/{{token.owner}}" target="_blank">${{token.owner_type}}</a></td>
                 <td scope="row"><a href="{{token.poocoin}}" target="_blank">Chart</a></td>
                 <td scope="row"><a href="{{token.top_holders}}" target="_blank">Holders</a></td>
                 <td scope="row"><a href="{{token.lp_v2}}" target="_blank">v2 Holders</a></td>
+                <td scope="row"><a href="{{token.contract_source}}" target="_blank">Contract</a></td>
                 <td scope="row">{{token.creation_time}}m ago</td>
                 <td scope="row">{{token.num_transfers}}</td>
             </tr>

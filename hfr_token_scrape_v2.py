@@ -242,6 +242,7 @@ def pull_tokens(num):
                     "poocoin": "https://poocoin.app/tokens/" + token_address,
                     "top_holders": "https://bscscan.com/token/" + token_address + "#balances",
                     "lp_v2": "https://bscscan.com/token/" + liquidity_v2_pair_address + "#balances",
+                    "contract_source": "https://bscscan.com/address/" + token_address + "#code",
                     "owner": token_owner,
                     "owner_type": owner_type,
                     "creation_time": time_since_creation,
