@@ -223,34 +223,37 @@ def pull_tokens(num):
 
                 transfer_minutes = 10 # Check for transfers in last 10 minutes
                 transfer_start_block = find_starting_block(transfer_minutes)
-                transfers = contract.events.Transfer.getLogs(fromBlock=transfer_start_block, toBlock='latest')
-                token_transfers = len(transfers)
-                if(token_transfers < 10):
-                    transfer_color = 'table-danger'
-                else:
-                    transfer_color = ''
-                pcs_v2_factory_contract = w3.eth.contract(address=w3.toChecksumAddress(constants.PCS_V2_FACTORY_ADDRESS), abi=constants.PCS_ABI)
-                wbnb_address_short = w3.toChecksumAddress("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c")
-                liquidity_v2_pair_address = pcs_v2_factory_contract.functions.getPair(token_address, wbnb_address_short).call()
-                pair_creation_time = w3.eth.get_block(token_block).timestamp
-                time_since_creation = int((time.time() - pair_creation_time)/60)
-                approved_token = {
-                    "name": contract.functions.name().call(),
-                    "symbol": contract.functions.symbol().call(),
-                    "address": token_address,
-                    "bscscan": "https://bscscan.com/token/" + token_address,
-                    "poocoin": "https://poocoin.app/tokens/" + token_address,
-                    "top_holders": "https://bscscan.com/token/" + token_address + "#balances",
-                    "lp_v2": "https://bscscan.com/token/" + liquidity_v2_pair_address + "#balances",
-                    "contract_source": "https://bscscan.com/address/" + token_address + "#code",
-                    "owner": token_owner,
-                    "owner_type": owner_type,
-                    "creation_time": time_since_creation,
-                    "num_transfers": token_transfers,
-                    "transfer_color": transfer_color
-                }
-                retained_tokens.append(approved_token)
-                print(token_address, " - Token RETAINED")
+                try:
+                    transfers = contract.events.Transfer.getLogs(fromBlock=transfer_start_block, toBlock='latest')
+                    token_transfers = len(transfers)
+                    if(token_transfers < 10):
+                        transfer_color = 'table-danger'
+                    else:
+                        transfer_color = ''
+                    pcs_v2_factory_contract = w3.eth.contract(address=w3.toChecksumAddress(constants.PCS_V2_FACTORY_ADDRESS), abi=constants.PCS_ABI)
+                    wbnb_address_short = w3.toChecksumAddress("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c")
+                    liquidity_v2_pair_address = pcs_v2_factory_contract.functions.getPair(token_address, wbnb_address_short).call()
+                    pair_creation_time = w3.eth.get_block(token_block).timestamp
+                    time_since_creation = int((time.time() - pair_creation_time)/60)
+                    approved_token = {
+                        "name": contract.functions.name().call(),
+                        "symbol": contract.functions.symbol().call(),
+                        "address": token_address,
+                        "bscscan": "https://bscscan.com/token/" + token_address,
+                        "poocoin": "https://poocoin.app/tokens/" + token_address,
+                        "top_holders": "https://bscscan.com/token/" + token_address + "#balances",
+                        "lp_v2": "https://bscscan.com/token/" + liquidity_v2_pair_address + "#balances",
+                        "contract_source": "https://bscscan.com/address/" + token_address + "#code",
+                        "owner": token_owner,
+                        "owner_type": owner_type,
+                        "creation_time": time_since_creation,
+                        "num_transfers": token_transfers,
+                        "transfer_color": transfer_color
+                    }
+                    retained_tokens.append(approved_token)
+                    print(token_address, " - Token RETAINED")
+                except:
+                    print(token_address, "- Token DISCARDED -> Source Code is NOT VERIFIED on BSC")
             else:
                 print(token_address, "- Token DISCARDED -> Source Code is NOT VERIFIED on BSC")
 
